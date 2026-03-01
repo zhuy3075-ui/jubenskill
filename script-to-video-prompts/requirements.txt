@@ -1,0 +1,8 @@
+# script-to-video-prompts 依赖
+# 核心依赖（标准库，无需安装）
+# re, json, csv, pathlib, dataclasses, enum, typing, datetime
+
+# 可选依赖（按需安装）
+python-docx>=0.8.11    # Word (.docx) 文件解析
+pdfplumber>=0.9.0       # PDF 文件解析
+openpyxl>=3.1.0         # Excel (.xlsx) 导出

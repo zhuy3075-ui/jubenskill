@@ -1,0 +1,72 @@
+{
+  "template_version": "1.0.0",
+  "mode": "C",
+  "task_id": "task_20260301_0001",
+  "timestamp": "2026-03-01T12:00:00+08:00",
+  "overall_pass": false,
+  "stage": {
+    "current": "阶段二",
+    "next_allowed": "阶段三",
+    "awaiting_user_confirmation": true
+  },
+  "checks": {
+    "asset_consistency": {
+      "pass": false,
+      "undefined_tags_count": 1,
+      "alias_mismatch_count": 0,
+      "missing_source_count": 0,
+      "identity_drift_count": 0,
+      "details": [
+        "分镜 2-4 使用了未定义标签 @反派B"
+      ]
+    },
+    "phase_output": {
+      "pass": true,
+      "phase_order_ok": true,
+      "paused_for_confirmation": true,
+      "shot_count_aligned": true,
+      "placeholder_residue_count": 0,
+      "details": []
+    },
+    "grid_mode": {
+      "applicable": true,
+      "pass": true,
+      "shot_grid_mapping_error_count": 0,
+      "timeline_order_ok": true,
+      "style_continuity_ok": true,
+      "frame_label_format_ok": true,
+      "keyframe_recommendation_missing_count": 0,
+      "details": []
+    },
+    "gacha_variants": {
+      "applicable": true,
+      "pass": false,
+      "missing_variant_shots": [
+        "3-2"
+      ],
+      "camera_diversity_ok": true,
+      "transition_defined_ok": true,
+      "details": [
+        "分镜 3-2 缺少 C 变体（情绪氛围）"
+      ]
+    },
+    "safety_compliance": {
+      "pass": true,
+      "violence_risk_count": 0,
+      "copyright_risk_count": 0,
+      "style_violation_count": 0,
+      "negative_constraints_complete": true,
+      "chinese_output_ok": true,
+      "details": []
+    }
+  },
+  "gate_decision": {
+    "status": "block",
+    "reason": "存在未定义标签与抽卡变体缺失，禁止进入下一阶段",
+    "required_fixes": [
+      "补充资产定义 @反派B",
+      "补全分镜 3-2 的 C 变体"
+    ]
+  },
+  "summary_markdown": "【质检成果清单】\\n- 资产一致性：未通过（未定义标签: 1）\\n- 分阶段执行：通过\\n- 分镜数量对齐：通过\\n- 宫格模式检查：通过\\n- 抽卡变体检查：未通过（缺失镜号: 3-2）\\n- 安全合规检查：通过\\n- 结论：需修复后重试"
+}
