@@ -1,9 +1,9 @@
 # AI视频提示词全能生成器 (script-to-video-prompts)
 
-> 版本 3.1.3
+> 版本 3.2.0
 
-AI视频提示词全能生成器 Claude Code Skill。支持三种模式：A）剧本流水线（剧本→分镜→提示词）；B）直接生成（一句话意图→Seedance 2.0 平台级提示词）；C）对标视频拆解与爆款重构（五维解构+微创新+差异化公式）。
-触发词（口语优先）：「做视频」「拍视频」「搞个视频」「视频文案」「写提示词」「写分镜」「分镜」「视频脚本」「镜头」「帮我做视频」「我有个剧本」「剧本转视频」「拆解视频」「分析视频」「分析这个视频」「学爆款」「模仿视频」「拆片」「AI视频」「AI做视频」「AI生成视频」「文生视频」「图生视频」「视频提示词」「视频生成」「prompt」「Seedance」「seedance」「即梦」「即梦平台」「短剧」「广告视频」「视频延长」「对标拆解」「爆款分析」「短视频」
+AI视频提示词全能生成器 Claude Code Skill。支持四种模式：A）剧本流水线（剧本→分镜→提示词）；B）直接生成（一句话意图→Seedance 2.0 平台级提示词）；C）对标视频拆解与爆款重构（五维解构+微创新+差异化公式）；D）视频理解（视频文件→Gemini API→剧本→提示词）。
+触发词（口语优先）：「做视频」「拍视频」「搞个视频」「视频文案」「写提示词」「写分镜」「分镜」「视频脚本」「镜头」「帮我做视频」「我有个剧本」「剧本转视频」「拆解视频」「分析视频」「分析这个视频」「学爆款」「模仿视频」「拆片」「AI视频」「AI做视频」「AI生成视频」「文生视频」「图生视频」「视频提示词」「视频生成」「视频理解」「视频转剧本」「prompt」「Seedance」「seedance」「即梦」「即梦平台」「短剧」「广告视频」「视频延长」「对标拆解」「爆款分析」「短视频」
 
 ## 项目结构
 
@@ -13,6 +13,7 @@ script-to-video-prompts/
 ├── requirements.txt            # Python 可选依赖
 ├── scripts/                    # Python 自动化脚本（v2.0）
 │   ├── parse_script.py         # 步骤1: 剧本解析（状态机驱动）
+│   ├── video_analyzer.py       # 模式D: 视频理解（Gemini API → ParsedScript）
 │   ├── character_extractor.py  # 步骤2: 角色提取（从 elements 提取特征）
 │   ├── scene_analyzer.py       # 步骤3: 场景分析
 │   ├── storyboard_generator.py # 步骤4: 分镜生成（元素驱动）
@@ -26,6 +27,7 @@ script-to-video-prompts/
 ├── docs/                       # 协议规范 + 威胁模型
 └── tests/
     ├── test_regression.py      # 回归测试（45个用例）
+    ├── test_video_analyzer.py  # 视频分析器测试（29个用例）
     └── test_evolution_*.py     # 进化系统测试（116个用例）
 ```
 
@@ -48,6 +50,11 @@ script-to-video-prompts/
 对标视频链接/素材 → 五维解构 → 评论区洞察 → 微创新策略菜单 → 差异化重构方案
 ```
 
+**模式D（视频理解）**：
+```
+视频文件 + API Key → Gemini 视频理解 → ParsedScript Dict → ②角色 → ③场景 → ④分镜 → ④b提示词 → ⑤校验 → ⑥导出
+```
+
 | 步骤 | 脚本 | 入口函数 | 输入 | 输出 |
 |------|------|---------|------|------|
 | 1 解析 | parse_script.py | `parse_script(file_path)` | 文件路径 str | ParsedScript Dict（含 elements） |
@@ -56,6 +63,8 @@ script-to-video-prompts/
 | 4 分镜 | storyboard_generator.py | `generate_storyboard(parsed, scenes, chars)` | 步骤1+2+3 | Storyboard Dict |
 | 4b 优化 | prompt_optimizer.py | `optimize_prompt(prompt, context)` | 提示词 str | 优化结果 Dict |
 | B 直接生成 | prompt_optimizer.py | `generate_seedance_prompt(intent, duration, genre)` | 意图 str | Seedance 结果 Dict |
+| D 视频理解 | video_analyzer.py | `analyze_video(file_path, api_key)` | 视频路径 + API Key | ParsedScript Dict（同步骤1输出） |
+| D 完整结果 | video_analyzer.py | `analyze_video_full(file_path, api_key)` | 视频路径 + API Key | 含角色提示+质量评分 Dict |
 | 5 校验 | consistency_checker.py | `check_consistency(storyboard, chars, scenes)` | 步骤2+3+4 | 一致性报告 Dict |
 | 6 导出 | export_utils.py | `export_all(storyboard, chars, scenes, dir)` | 步骤2+3+4 | 文件路径 Dict |
 
@@ -93,6 +102,14 @@ script-to-video-prompts/
 - 新增模式C结构化 JSON 机审模板（C9）
 - 新增 `assets/c7_quality_gate_template.json`，用于自动质检网关判定与后续流水线集成
 
+## v3.2.0 增量改进
+
+- 新增模式D（视频理解与剧本生成）：视频文件 → Gemini 2.5 Pro API → ParsedScript → 接入步骤 2-6
+- 新增 `scripts/video_analyzer.py`（VideoAnalyzer 类，4级JSON容错，标准库零依赖）
+- 新增 `tests/test_video_analyzer.py`（29个测试用例）
+- API 地址：`https://yunwu.ai/v1beta/models/gemini-2.5-pro:generateContent?key=KEY`
+- 触发词补充：「视频理解」「视频转剧本」「理解视频」
+
 ## 开发约定
 
 ### 双语规则
@@ -120,7 +137,7 @@ script-to-video-prompts/
 ```bash
 python -m pytest tests/test_regression.py -v    # 45 个用例，pytest 标准断言
 python -m pytest tests/test_evolution_*.py -v   # 116 个进化系统测试
-python -m pytest tests/ -v                      # 全量 161 个测试
+python -m pytest tests/ -v                      # 全量 190 个测试
 ```
 
 ## 注意事项
