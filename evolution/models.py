@@ -120,6 +120,10 @@ class QualityReport:
     scela_score: float = 0.0
     compliance_passed: bool = True
     consistency_score: float = 0.0
+    dimension_scores: Dict[str, float] = field(default_factory=dict)
+    elo_ratings: Dict[str, float] = field(default_factory=dict)
+    active_weights: Dict[str, float] = field(default_factory=dict)
+    comparison_summary: Dict = field(default_factory=dict)
     attempt_number: int = 1
     issues: List[str] = field(default_factory=list)
     auto_fixed: List[str] = field(default_factory=list)
@@ -204,6 +208,50 @@ class HeartbeatState:
     check_count: int = 0
     consecutive_failures: int = 0
     next_backoff_seconds: int = 0
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+# ---------------------------------------------------------------------------
+# Micro scoring models
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ScoreDimension:
+    name: str = ""
+    weight: float = 0.0
+    elo_rating: float = 1500.0
+    history: List[float] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class PairComparison:
+    id: str = field(default_factory=_uuid)
+    output_a_id: str = ""
+    output_b_id: str = ""
+    dimension: str = ""
+    winner: str = "tie"          # a | b | tie
+    margin: float = 0.0
+    source: str = "auto"         # auto | user | heuristic
+    timestamp: str = field(default_factory=_now_iso)
+
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
+
+@dataclass
+class EvolvedPreference:
+    dimension: str = ""
+    direction: str = "neutral"   # prefer_high | prefer_low | neutral
+    strength: float = 0.0
+    weight_adjustment: float = 0.0
+    formed_at: str = field(default_factory=_now_iso)
+    comparison_count: int = 0
+    confidence: float = 0.0
 
     def to_dict(self) -> Dict:
         return asdict(self)

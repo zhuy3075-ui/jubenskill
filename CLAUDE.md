@@ -137,7 +137,7 @@ script-to-video-prompts/
 ```bash
 python -m pytest tests/test_regression.py -v    # 45 个用例，pytest 标准断言
 python -m pytest tests/test_evolution_*.py -v   # 116 个进化系统测试
-python -m pytest tests/ -v                      # 全量 190 个测试
+python -m pytest tests/ -v                      # 全量 201 个测试
 ```
 
 ## 注意事项
@@ -152,7 +152,7 @@ python -m pytest tests/ -v                      # 全量 190 个测试
 14 个模块位于 `evolution/`，持久数据位于 `evolve_data/`（热更新时保留）。
 
 ### 运维命令
-`/evolve status` | `learn` | `rollback [id]` | `memory` | `health` | `export` | `log` | `reset --confirm`
+`/evolve status` | `learn` | `rollback [id]` | `memory` | `scores` | `preferences` | `compare <archive_id>` | `scorer reset|calibrate` | `health` | `export` | `log` | `reset --confirm`
 
 ### 安全策略
 - 供应链: 仓库白名单 + 版本固定 + SHA-256 + dry-run + 审计日志

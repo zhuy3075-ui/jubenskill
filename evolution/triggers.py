@@ -19,6 +19,10 @@ class TriggerRouter:
         "learn": "强制从最近输出学习模式",
         "rollback": "列出快照或回滚到指定版本",
         "memory": "查看/管理存储的偏好和模式",
+        "scores": "查看7维ELO评分与当前阶段",
+        "preferences": "查看已形成的进化偏好",
+        "compare": "与指定归档手动比较 (/evolve compare <archive_id>)",
+        "scorer": "评分器维护命令: reset|calibrate",
         "health": "运行完整性检查",
         "export": "一键打包分发",
         "log": "查看最近进化日志",
@@ -59,6 +63,11 @@ class TriggerRouter:
             "rollback": lambda: self.engine.rollback(
                 params.get("args", [None])[0] if params.get("args") else None),
             "memory": lambda: self.engine.show_memory(),
+            "scores": lambda: self.engine.show_scores(),
+            "preferences": lambda: self.engine.show_evolved_preferences(),
+            "compare": lambda: self.engine.compare_with_archive(
+                params.get("args", [None])[0] if params.get("args") else None),
+            "scorer": lambda: self._scorer_subcommand(params),
             "health": lambda: self.engine.health_check(),
             "export": lambda: self.engine.export_package(**params),
             "log": lambda: self.engine.show_log(
@@ -71,6 +80,15 @@ class TriggerRouter:
         if not handler:
             return f"未知命令: {action}\n\n{self.help()}"
         return handler()
+
+    def _scorer_subcommand(self, params: Dict) -> str:
+        args = params.get("args", [])
+        sub = args[0].lower() if args else ""
+        if sub == "reset":
+            return self.engine.scorer_reset()
+        if sub == "calibrate":
+            return self.engine.scorer_calibrate()
+        return "用法: /evolve scorer <reset|calibrate>"
 
     def help(self) -> str:
         lines = ["📖 进化系统命令列表：", ""]

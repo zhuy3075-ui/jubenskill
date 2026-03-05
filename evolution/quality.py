@@ -1,16 +1,37 @@
 """Quality inspector — self-check + auto-retry (Req 2).
 
-After generation, auto-runs SCELA score, compliance, and consistency checks.
-If below threshold, auto-retries up to 3 times with logged attempts.
+After generation, runs 7-dimension quality scoring.
+Keeps backward-compatible headline scores:
+- overall_score
+- scela_score
+- compliance_passed
+- consistency_score
 """
 from __future__ import annotations
 
-import sys
-from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 
-from .models import QualityReport, _now_iso
+from .models import QualityReport
 from .logger import EvolveLogger
+from .dimensions import DimensionScorer
+
+
+def _normalize_weights(weights: Dict[str, float], dims: List[str]) -> Dict[str, float]:
+    normalized = {}
+    for d in dims:
+        normalized[d] = max(0.0, float(weights.get(d, 0.0)))
+    s = sum(normalized.values())
+    if s <= 0:
+        eq = 1.0 / max(len(dims), 1)
+        return {d: eq for d in dims}
+    vals = {d: normalized[d] / s for d in dims}
+    # Keep exact sum=1.0 by compensating the final dimension.
+    if dims:
+        head = dims[:-1]
+        last = dims[-1]
+        head_sum = sum(vals[d] for d in head)
+        vals[last] = max(0.0, 1.0 - head_sum)
+    return vals
 
 
 class QualityInspector:
@@ -22,64 +43,48 @@ class QualityInspector:
 
     def __init__(self, logger: EvolveLogger):
         self.logger = logger
+        self.dimension_scorer = DimensionScorer()
+        self.default_weights = {
+            d: 1.0 / len(self.dimension_scorer.DIMENSIONS)
+            for d in self.dimension_scorer.DIMENSIONS
+        }
 
     def inspect(self, storyboard: Dict, characters: Dict = None,
                 scenes: List[Dict] = None,
-                platform: str = None) -> QualityReport:
+                platform: str = None,
+                weights: Optional[Dict[str, float]] = None) -> QualityReport:
         """Run full quality inspection on generated output."""
         issues = []
         auto_fixed = []
-        scela_score = 0.0
-        compliance_passed = True
-        consistency_score = 1.0
 
-        # Import optimizer for SCELA check
-        try:
-            sys.path.insert(0, str(
-                Path(__file__).parent.parent / "scripts"))
-            from prompt_optimizer import PromptOptimizer
-            optimizer = PromptOptimizer()
+        dimension_scores = self.dimension_scorer.score_all(
+            storyboard=storyboard or {},
+            characters=characters or {},
+            scenes=scenes or [],
+            platform=platform,
+        )
+        scela_score = float(dimension_scores.get("scela_coverage", 0.0))
+        consistency_score = float(dimension_scores.get("consistency", 0.0))
+        compliance_score = float(dimension_scores.get("compliance", 1.0))
+        compliance_passed = compliance_score >= 0.95
+        if not compliance_passed:
+            issues.append("合规评分低于阈值")
 
-            shots = storyboard.get("shots", [])
-            if shots:
-                scela_scores = []
-                for shot in shots:
-                    prompt = shot.get("visual_prompt", "") or shot.get(
-                        "optimized_prompt", "")
-                    if prompt:
-                        result = optimizer.check_scela(prompt)
-                        scela_scores.append(result.get("score", 0))
-                if scela_scores:
-                    scela_score = sum(scela_scores) / len(scela_scores)
-
-                # Compliance check
-                if platform and platform.lower() == "seedance":
-                    for shot in shots:
-                        prompt = shot.get("visual_prompt", "")
-                        if prompt:
-                            comp = optimizer._check_seedance_compliance(prompt)
-                            if comp:
-                                compliance_passed = False
-                                issues.extend(comp)
-        except ImportError:
-            issues.append("prompt_optimizer not available for quality check")
-
-        # Consistency: simple check — character names should be consistent
-        if characters and storyboard.get("shots"):
-            char_names = set(characters.keys())
-            for shot in storyboard.get("shots", []):
-                prompt = shot.get("visual_prompt", "")
-                # Basic check: at least some character references exist
-            consistency_score = min(1.0, len(char_names) * 0.2) if char_names else 0.5
-
-        overall = (scela_score * 0.5 + consistency_score * 0.3 +
-                   (1.0 if compliance_passed else 0.0) * 0.2)
+        active_weights = _normalize_weights(
+            weights or self.default_weights,
+            self.dimension_scorer.DIMENSIONS,
+        )
+        overall = 0.0
+        for d in self.dimension_scorer.DIMENSIONS:
+            overall += float(dimension_scores.get(d, 0.0)) * active_weights.get(d, 0.0)
 
         report = QualityReport(
             overall_score=round(overall, 3),
             scela_score=round(scela_score, 3),
             compliance_passed=compliance_passed,
             consistency_score=round(consistency_score, 3),
+            dimension_scores=dimension_scores,
+            active_weights=active_weights,
             attempt_number=1,
             issues=issues,
             auto_fixed=auto_fixed,
@@ -105,6 +110,7 @@ class QualityInspector:
                 output.get("characters"),
                 output.get("scenes"),
                 output.get("platform"),
+                output.get("evolved_weights"),
             )
             report.attempt_number = attempt
 
