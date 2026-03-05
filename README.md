@@ -2,6 +2,12 @@
 
 AI 视频提示词与分镜工作流工具集，支持从剧本/创意/视频输入到可执行提示词与导出交付。
 
+## 单一维护源策略
+- 唯一维护源：`C:\Users\zhuyue\Desktop\剧本skill`（本仓库源码）。
+- 运行时目录：`C:\Users\zhuyue\.codex\skills\script-to-video-prompts` 与 `C:\Users\zhuyue\.agents\skills\script-to-video-prompts` 仅作为镜像副本。
+- 变更流程：所有规则与逻辑先改源码，再同步到运行时目录，禁止直接在运行时目录手改后不回写源码。
+- 本次已同步项：`SKILL.md` 强制执行段、工作流门禁、AskUserQuestion 自动唤起强化策略。
+
 ## 目录
 - [项目能力](#项目能力)
 - [快速开始](#快速开始)
@@ -157,4 +163,3 @@ python -m pytest tests -q
 - 技能规范：[SKILL.md](SKILL.md)
 - 进化协议：[docs/evolution_protocol.md](docs/evolution_protocol.md)
 - 威胁模型：[docs/evolution_threat_model.md](docs/evolution_threat_model.md)
-
